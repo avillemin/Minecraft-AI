@@ -15,3 +15,4 @@ The file DQL_bot.py create the Minecraft environment and build the map. Then, it
 Environment used : https://github.com/Microsoft/malmo
 
 N-step Q-learning : https://papoudakis.github.io/announcements/qlearning/
+Deep reinforcement learning https://arxiv.org/pdf/1312.5602.pdf
