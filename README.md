@@ -10,7 +10,7 @@ I used pyTorch to realize the two bots.
 
 The file DQL_bot.py create the Minecraft environment and build the map. Then, it will realize the actions chosen by the neural network created in DQL_network.py.
 
--> The next steps of this project will be to apply Augmented Random Search and A3C on the same environment to compare the results.
+The next steps of this project will be to apply Augmented Random Search and A3C on the same environment to compare the results.
 
 Environment used : https://github.com/Microsoft/malmo
 
