@@ -16,3 +16,4 @@ Environment used : https://github.com/Microsoft/malmo
 
 N-step Q-learning : https://papoudakis.github.io/announcements/qlearning/
 Deep reinforcement learning https://arxiv.org/pdf/1312.5602.pdf
+Asynchronous Methods for Deep Reinforcement Learning : https://arxiv.org/pdf/1602.01783.pdf
