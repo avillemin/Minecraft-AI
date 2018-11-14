@@ -32,12 +32,6 @@ def img_process():
     video_frame = np.reshape(np.array(video_frame), (world_state.video_frames[-1].height,world_state.video_frames[-1].width,4))
     img = video_frame[:,25:-25,:3]
     img = resize(img, (height,width,3))
-#    plt.imshow(img[:,:,0])
-#    plt.show()
-#    plt.imshow(img[:,:,1])
-#    plt.show()
-#    plt.imshow(img)
-#    plt.show()
     img = np.transpose(img, (2, 0, 1))
     img = img.astype('float32') / 255.
     img = torch.Tensor(img)
