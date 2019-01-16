@@ -12,6 +12,11 @@ The file DQL_bot.py create the Minecraft environment and build the map. Then, it
 
 The next steps of this project will be to apply Augmented Random Search and A3C on the same environment to compare the results.
 
+```bash
+>> cd C:\Users\avillemin\Pictures\Malmo-0.36.0-Windows-64bit_withBoost_Python3.6\Minecraft
+>> launchClient.bat
+```
+
 Environment used : https://github.com/Microsoft/malmo
 
 N-step Q-learning : https://papoudakis.github.io/announcements/qlearning/  
