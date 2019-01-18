@@ -8,6 +8,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torch
 
+import imageio as io
+
 
 # In[23]:
 
@@ -95,29 +97,33 @@ class ConvVAE():
         self.cuda = torch.cuda.is_available()
         self.device = torch.device("cuda" if self.cuda else "cpu")
         print("ConVAE running on GPU" if self.cuda else "ConVAE running on CPU")
-        self.vae = VAE(img_channels, latent_size).to(self.device)
+        self.model = VAE(img_channels, latent_size).to(self.device)
         self.learning_rate = learning_rate
-        self.optimizer = optim.Adam(self.vae.parameters(), lr = learning_rate)
+        self.optimizer = optim.Adam(self.model.parameters(), lr = learning_rate)
         self.losses = []
         self.BCEs = []
         self.KLDs = []
+        self.latent_size = latent_size
         self.epoch_trained = 0
         
     def train(self, batch_img, batch_size, nb_epochs):
+        demo = []
+        demo.append(self.save_figure(batch_img))
         if self.epoch_trained>0: print(f'ConvVAE already trained on {self.epoch_trained} epochs')
-        self.epoch_trained += nb_epochs
-        batch_img = batch_img.to(self.device)
+        batch_img = batch_img.to(self.device)        
         for epoch in range(1,nb_epochs+1):
             loss_epoch = 0
             for batch in torch.split(batch_img, 40, dim=0):
-                self.vae.train()
+                self.model.train()
                 self.optimizer.zero_grad()
-                recon_x, mu, logsigma = self.vae(batch)
+                recon_x, mu, logsigma = self.model(batch)
                 
                 BCE = F.mse_loss(recon_x, batch, reduction='sum')
+                BCE_blue = F.mse_loss(recon_x[:,0,:,:], batch[:,0,:,:], reduction='sum')
+                BCE_end = F.mse_loss(torch.split(recon_x,int(recon_x.size(2)/3),dim=2)[0], torch.split(batch,int(batch.size(2)/3),dim=2)[0], reduction='sum')
                 #If the training is bad, add a threshold to KLD
                 KLD = -0.5 * torch.sum(1 + 2 * logsigma - mu.pow(2) - (2 * logsigma).exp())
-                loss = BCE + KLD
+                loss = BCE + KLD + BCE_end + BCE_blue
                 loss_epoch+=loss
                 self.losses.append(loss)
                 self.BCEs.append(BCE)
@@ -127,15 +133,24 @@ class ConvVAE():
                 self.optimizer.step()
             
             if epoch%max(int(nb_epochs/10),1)==0:
-                print(f'Epoch {epoch}: loss = {round(float(loss_epoch),4)}') #CHECK THIS LINE, voir s on peut utiliser tdqm
-        
+                print(f'Epoch {epoch+self.epoch_trained}: loss = {round(float(loss_epoch),4)}') #CHECK THIS LINE, voir s on peut utiliser tdqm
+                demo.append(self.save_figure(batch_img))
+        io.mimsave('./figures/training_epochs='+str(nb_epochs)+'_images='+str(batch_img.size(0))+'_latent='+str(self.latent_size)+'.gif', demo, duration = 0.55)       
+        self.epoch_trained += nb_epochs
         return recon_x
         
     def __call__(self,batch_img):
-        return self.vae(batch_img.to(self.device))[0]
+        return self.model(batch_img.to(self.device))[0]
+    
+    def encode(self,batch_img):
+        mu, logsigma = self.model.encoder(batch_img.to(self.device))
+        sigma = logsigma.exp()
+        epsilon = torch.randn_like(sigma)
+        z = epsilon.mul(sigma).add_(mu).detach()
+        return z
 
     def display_reconstruction(self,batch_img, id_img):
-        recon_batch_img = self.vae(batch_img[id_img,:,:,:].unsqueeze(0).to(self.device))[0].detach()
+        recon_batch_img = self.model(batch_img[id_img,:,:,:].unsqueeze(0).to(self.device))[0].detach()
         import matplotlib.pyplot as plt
         
         plt.figure(figsize = (10,20))
@@ -159,18 +174,55 @@ class ConvVAE():
         plt.subplots_adjust(wspace=0, hspace=0)
         plt.show()
         
+    def save_figure(self,batch_img):
+        recon_batch_img = self.model(batch_img[0,:,:,:].unsqueeze(0).to(self.device))[0].detach()
+        import matplotlib.pyplot as plt
+        
+        fig = plt.figure(figsize = (10,16))            
+        plt.subplot(3,2,1)
+        plt.imshow(np.transpose(batch_img[0,:,:,:].cpu().numpy(),(1,2,0)))
+        plt.axis('off')
+        img = np.transpose(np.array(recon_batch_img[0,:,:,:].detach().cpu()),(1,2,0))
+        plt.subplot(3,2,2)
+        plt.imshow(np.clip(img,0,1))
+        plt.axis('off')
+        
+        recon_batch_img = self.model(batch_img[batch_img.size(0)//2,:,:,:].unsqueeze(0).to(self.device))[0].detach()
+        plt.subplot(3,2,3)
+        plt.imshow(np.transpose(batch_img[batch_img.size(0)//2,:,:,:].cpu().numpy(),(1,2,0)))
+        plt.axis('off')
+        img = np.transpose(np.array(recon_batch_img[0,:,:,:].detach().cpu()),(1,2,0))
+        plt.subplot(3,2,4)
+        plt.imshow(np.clip(img,0,1))
+        plt.axis('off')
+        
+        recon_batch_img = self.model(batch_img[-1,:,:,:].unsqueeze(0).to(self.device))[0].detach()
+        plt.subplot(3,2,5)
+        plt.imshow(np.transpose(batch_img[-1,:,:,:].cpu().numpy(),(1,2,0)))
+        plt.axis('off')
+        img = np.transpose(np.array(recon_batch_img[0,:,:,:].detach().cpu()),(1,2,0))
+        plt.subplot(3,2,6)
+        plt.imshow(np.clip(img,0,1))
+        plt.axis('off')
+        
+        plt.subplots_adjust(wspace=0, hspace=0)
+        fig.tight_layout(pad=2)
+        fig.canvas.draw()
+        data = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
+        data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        plt.close(fig)
+        return data
+        
+        
     def save(self,path=None):
-        if path==None:
-            torch.save(self.vae,'./models/ConvVAE_weights.pt')
-            torch.save(self.optimizer,'./models/ConvVAE_optimizer.pt')
-        else:
-            torch.save(self.vae,path+'_weights.pt')
-            torch.save(self.optimizer,path+'_optimizer.pt')
+        path = './models/ConvVAE' if path==None else path
+        torch.save(self.optimizer.state_dict(),path+'_optimizer.pt')
+        torch.save(self.model.state_dict(),path+'_weights.pt')
         print('Model and Optimizer saved')
         
     def load(self,path=None):
         path = './models/ConvVAE' if path==None else path
-        self.vae = torch.load(path+'_weights.pt')
-        self.optimizer = torch.load(path+'_optimizer.pt')
-        self.vae.eval()
+        self.model.load_state_dict(torch.load(path+'_weights.pt', map_location=self.device))
+        self.optimizer.load_state_dict(torch.load(path+'_optimizer.pt', map_location=self.device))
+        self.model.eval()
         print('Model and Optimizer loaded')
