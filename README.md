@@ -54,6 +54,18 @@ There is a key connection between the value function and the action-value functi
 Advantage function:   
 <p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/a596eb68ba26e424afaff142ae747d5cffd2be60.svg"></p>
    
-## Kinds of RL Algorithms
+# Kinds of RL Algorithms
 
 ![Alt text](https://spinningup.openai.com/en/latest/_images/rl_algorithms_9_15.svg)
+
+## Model-Free vs Model-Based RL
+
+   One of the most important branching points in an RL algorithm is the question of whether the agent has access to (or learns) a model of the environment. By a model of the environment, we mean a function which predicts state transitions and rewards.   
+   The main upside to having a model is that it allows the agent to plan by thinking ahead, seeing what would happen for a range of possible choices, and explicitly deciding between its options.    
+   Algorithms which use a model are called model-based methods, and those that don’t are called model-free. While model-free methods forego the potential gains in sample efficiency from using a model, they tend to be easier to implement and tune. As of the time of writing this introduction (September 2018), model-free methods are more popular and have been more extensively developed and tested than model-based methods.   
+
+What to learn:
+- policies, either stochastic or deterministic,
+- action-value functions (Q-functions),
+- value functions,
+- and/or environment models.
