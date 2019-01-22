@@ -69,3 +69,12 @@ What to learn:
 - action-value functions (Q-functions),
 - value functions,
 - and/or environment models.
+
+## Simplest Policy Gradient
+
+Here, we consider the case of a stochastic, parameterized policy, ![](https://spinningup.openai.com/en/latest/_images/math/80088cfe6126980142c5447a9cb12f69ee7fa333.svg). We aim to maximize the expected return ![Alt Text](https://spinningup.openai.com/en/latest/_images/math/48ffbf0dd0274a46574e145ea23e4c174f6dfaa3.svg). For the purposes of this derivation, we’ll take R(tau) to give the finite-horizon undiscounted return, but the derivation for the infinite-horizon discounted return setting is almost identical.
+
+We would like to optimize the policy by gradient ascent, eg
+<p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/237c86938ce2e9de91040e4090f79c6a1125fc00.svg"></p> 
+This is an expectation, which means that we can estimate it with a sample mean. If we collect a set of trajectories where each trajectory is obtained by letting the agent act in the environment using the policy, the policy gradient can be estimated with
+<p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/a8ec906d99c7cb540ef0df80d86fa1bca0f33a79.svg"></p> 
