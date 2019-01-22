@@ -157,4 +157,26 @@ where π_k is the policy at epoch k. This is done with one or more steps of grad
 # Other Forms of the Policy Gradient
 
 What we have seen so far is that the policy gradient has the general form
-<p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/458b0eb0829ecd27ff745f9329fdc0fbd56295bf.svg"></p>
+<p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/1485ca5baaa09ed99fbcc54ba600e36852afd36c.svg"></p>   
+   
+where Phi_t could be any of the finite-horizon undiscounted return, the reward-to-go or the reward-to-go with a baseline b(s_t).   
+   
+All of these choices lead to the same expected value for the policy gradient, despite having different variances. It turns out that there are two more valid choices of weights \Phi_t which are important to know.     
+   
+**1. On-Policy Action-Value Function.** The choice ![](https://spinningup.openai.com/en/latest/_images/math/bf6f5680c7568790c744baf59bbc27831603f200.svg) is also valid. 
+   
+**2. The Advantage Function.** Recall that the advantage of an action describes how much better or worse it is than other actions on average (relative to the current policy). This choice, ![](https://spinningup.openai.com/en/latest/_images/math/06e42f4a5a133c3a56d70aaa098c23c3f0a37df2.svg) is also valid.   
+   
+The formulation of policy gradients with advantage functions is extremely common, and there are many different ways of estimating the advantage function used by different algorithms.   
+
+# Vanilla Policy Gradient
+
+- VPG is an on-policy algorithm.
+- VPG can be used for environments with either discrete or continuous action spaces.   
+   
+<p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/291ee3741c3153bf4c21de62cee4823a4af59f58.svg"></p>   
+     
+VPG trains a stochastic policy in an on-policy way. This means that it explores by sampling actions according to the latest version of its stochastic policy. The amount of randomness in action selection depends on both initial conditions and the training procedure. Over the course of training, the policy typically becomes progressively less random, as the update rule encourages it to exploit rewards that it has already found. This may cause the policy to get trapped in local optima.   
+  
+   
+<p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/47a7bd5139a29bc2d2dc85cef12bba4b07b1e831.svg"></p>    
