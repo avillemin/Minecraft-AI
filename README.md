@@ -74,7 +74,7 @@ What to learn:
    
 We have our policy π that has a parameter θ. This π outputs a probability distribution of actions.   
    
-<p align="center"><img src="https://cdn-images-1.medium.com/max/1000/0*354cfoILK19WFTWa."></p>
+<p align="center"><img src="https://cdn-images-1.medium.com/max/1000/0*354cfoILK19WFTWa." width="400"></p>
 
 [Source] https://medium.freecodecamp.org/an-introduction-to-policy-gradients-with-cartpole-and-doom-495b5ef2207f   
    
@@ -179,4 +179,8 @@ The formulation of policy gradients with advantage functions is extremely common
 VPG trains a stochastic policy in an on-policy way. This means that it explores by sampling actions according to the latest version of its stochastic policy. The amount of randomness in action selection depends on both initial conditions and the training procedure. Over the course of training, the policy typically becomes progressively less random, as the update rule encourages it to exploit rewards that it has already found. This may cause the policy to get trapped in local optima.   
   
    
-<p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/47a7bd5139a29bc2d2dc85cef12bba4b07b1e831.svg"></p>    
+<p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/47a7bd5139a29bc2d2dc85cef12bba4b07b1e831.svg"></p>   
+
+# Q-Learning
+
+![Eligibility](https://github.com/avillemin/Minecraft-AI/blob/master/eligibilityTrace.PNG)
