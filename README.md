@@ -70,17 +70,20 @@ What to learn:
 - value functions,
 - and/or environment models.
 
-## Simplest Policy Gradient   
+# Simplest Policy Gradient   
    
-We have our policy π that has a parameter θ. This π outputs a probability distribution of actions.
+We have our policy π that has a parameter θ. This π outputs a probability distribution of actions.   
    
 <p align="center"><img src="https://cdn-images-1.medium.com/max/1000/0*354cfoILK19WFTWa."></p>
 
-[Source] https://medium.freecodecamp.org/an-introduction-to-policy-gradients-with-cartpole-and-doom-495b5ef2207f
+[Source] https://medium.freecodecamp.org/an-introduction-to-policy-gradients-with-cartpole-and-doom-495b5ef2207f   
+   
 Q-Learning: value-based reinforcement learning algorithms. To choose which action to take given a state, we take the action with the highest Q-value (maximum expected future reward I will get at each state). As a consequence, in **value-based learning**, a policy exists only because of these action-value estimates.   
+   
 In **policy-based** methods, instead of learning a value function that tells us what is the expected sum of rewards given a state and an action, we learn directly the policy function that maps state to action (select actions without using a value function). It means that we directly try to optimize our policy function π without worrying about a value function. We’ll directly parameterize π (select an action without a value function).
 
 A policy can be either deterministic or stochastic.   
+   
 A deterministic policy is policy that maps state to actions. You give it a state and the function returns an action to take. Deterministic policies are used in deterministic environments. These are environments where the actions taken determine the outcome. There is no uncertainty. For instance, when you play chess and you move your pawn from A2 to A3, you’re sure that your pawn will move to A3.
 On the other hand, a stochastic policy outputs a probability distribution over actions. It means that instead of being sure of taking action a (for instance left), there is a probability we’ll take a different one (in this case 30% that we take south).   
    
@@ -97,8 +100,7 @@ Most of the time we’ll use this second type of policy.
 - A third advantage is that policy gradient can learn a stochastic policy, while value functions can’t.   
 A stochastic policy allows our agent to explore the state space without always taking the same action. This is because it outputs a probability distribution over actions. As a consequence, it handles the exploration/exploitation trade off without hard coding it
 
-**Disadvantages**:   
-Naturally, Policy gradients have one big disadvantage. A lot of the time, they converge on a local maximum rather than on the global optimum.   
+**Disadvantages**:Naturally, Policy gradients have one big disadvantage. A lot of the time, they converge on a local maximum rather than on the global optimum.   
 Instead of Deep Q-Learning, which always tries to reach the maximum, policy gradients converge slower, step by step. They can take longer to train.   
 
 Here, we consider the case of a stochastic, parameterized policy, ![](https://spinningup.openai.com/en/latest/_images/math/80088cfe6126980142c5447a9cb12f69ee7fa333.svg). We aim to maximize the expected return ![Alt Text](https://spinningup.openai.com/en/latest/_images/math/48ffbf0dd0274a46574e145ea23e4c174f6dfaa3.svg). For the purposes of this derivation, we’ll take R(tau) to give the finite-horizon undiscounted return, but the derivation for the infinite-horizon discounted return setting is almost identical.
@@ -111,3 +113,48 @@ We would like to optimize the policy by gradient ascent, eg
 <p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/237c86938ce2e9de91040e4090f79c6a1125fc00.svg"></p> 
 This is an expectation, which means that we can estimate it with a sample mean. If we collect a set of trajectories where each trajectory is obtained by letting the agent act in the environment using the policy, the policy gradient can be estimated with
 <p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/a8ec906d99c7cb540ef0df80d86fa1bca0f33a79.svg"></p> 
+
+
+# Reward-to-Go Policy Gradient   
+   
+In the method above, I took the sum of all rewards ever obtained. But this doesn’t make much sense.   
+   
+Agents should really only reinforce actions on the basis of their consequences. Rewards obtained before taking an action have no bearing on how good that action was: only rewards that come after.   
+   
+It turns out that this intuition shows up in the math, and we can show that the policy gradient can also be expressed by   
+   
+<p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/9926209f608ff0134af57f8b5fa4ecf0ea515480.svg"></p>  
+
+In this form, actions are only reinforced based on rewards obtained after they are taken. We’ll call this form the **“reward-to-go policy gradient”**, because the sum of rewards after a point in a trajectory.   
+   
+But how is this better? A key problem with policy gradients is how many sample trajectories are needed to get a low-variance sample estimate for them. The formula we started with included terms for reinforcing actions proportional to past rewards, all of which had zero mean, but nonzero variance: as a result, they would just add noise to sample estimates of the policy gradient. By removing them, we reduce the number of sample trajectories needed.   
+   
+An (optional) proof of this claim can be found here, and it ultimately depends on the EGLP (Expected Grad-Log-Prob) lemma. Suppose that P{theta} is a parameterized probability distribution over a random variable, x. Then:
+<p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/458b0eb0829ecd27ff745f9329fdc0fbd56295bf.svg"></p>  
+   
+# Baselines in Policy Gradients   
+   
+An immediate consequence of the EGLP lemma is that for any function b which only depends on state,
+<p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/18738f8112fa4138e032a4be06e898543e587346.svg"></p>
+   
+This allows us to add or subtract any number of terms like this from our expression for the policy gradient, without changing it in expectation:
+<p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/a68f53bd1391212d17d426dafeb71a39c10c9189.svg"></p>
+   
+Any function b used in this way is called a baseline.   
+   
+The most common choice of baseline is the on-policy value function ![V](https://spinningup.openai.com/en/latest/_images/math/d1a28691e5690a9f6b7bce161b03bd1fc8eadbd8.svg). Recall that this is the average return an agent gets if it starts in state s_t and then acts according to policy π for the rest of its life.   
+   
+Empirically, the choice ![b](https://spinningup.openai.com/en/latest/_images/math/2221a29de2953ebb8930423425ed4d0feea27b25.svg) has the desirable effect of reducing variance in the sample estimate for the policy gradient. This results in faster and more stable policy learning. It is also appealing from a conceptual angle: it encodes the intuition that if an agent gets what it expected, it should “feel” neutral about it.   
+   
+In practice, ![](https://spinningup.openai.com/en/latest/_images/math/d1a28691e5690a9f6b7bce161b03bd1fc8eadbd8.svg) cannot be computed exactly, so it has to be approximated. This is usually done with a neural network, ![](https://spinningup.openai.com/en/latest/_images/math/a133925364fc62de281e792d4a41fbc9c360967f.svg), which is updated concurrently with the policy (so that the value network always approximates the value function of the most recent policy).
+   
+The simplest method for learning V_{\phi}, used in most implementations of policy optimization algorithms (including VPG, TRPO, PPO, and A2C), is to minimize a mean-squared-error objective:   
+
+<p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/e72767ea0e9d0fba2e5ab7af60aad01af4cdf0e0.svg"></p>   
+
+where π_k is the policy at epoch k. This is done with one or more steps of gradient descent, starting from the previous value parameters ![](https://spinningup.openai.com/en/latest/_images/math/7681f537ec31c9bc1c811dd0f33f46aa9aaabebf.svg).
+
+# Other Forms of the Policy Gradient
+
+What we have seen so far is that the policy gradient has the general form
+<p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/458b0eb0829ecd27ff745f9329fdc0fbd56295bf.svg"></p>
