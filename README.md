@@ -70,10 +70,43 @@ What to learn:
 - value functions,
 - and/or environment models.
 
-## Simplest Policy Gradient
+## Simplest Policy Gradient   
+   
+We have our policy π that has a parameter θ. This π outputs a probability distribution of actions.
+   
+<p align="center"><img src="https://cdn-images-1.medium.com/max/1000/0*354cfoILK19WFTWa."></p>
+
+[Source] https://medium.freecodecamp.org/an-introduction-to-policy-gradients-with-cartpole-and-doom-495b5ef2207f
+Q-Learning: value-based reinforcement learning algorithms. To choose which action to take given a state, we take the action with the highest Q-value (maximum expected future reward I will get at each state). As a consequence, in **value-based learning**, a policy exists only because of these action-value estimates.   
+In **policy-based** methods, instead of learning a value function that tells us what is the expected sum of rewards given a state and an action, we learn directly the policy function that maps state to action (select actions without using a value function). It means that we directly try to optimize our policy function π without worrying about a value function. We’ll directly parameterize π (select an action without a value function).
+
+A policy can be either deterministic or stochastic.   
+A deterministic policy is policy that maps state to actions. You give it a state and the function returns an action to take. Deterministic policies are used in deterministic environments. These are environments where the actions taken determine the outcome. There is no uncertainty. For instance, when you play chess and you move your pawn from A2 to A3, you’re sure that your pawn will move to A3.
+On the other hand, a stochastic policy outputs a probability distribution over actions. It means that instead of being sure of taking action a (for instance left), there is a probability we’ll take a different one (in this case 30% that we take south).   
+   
+![Alt Text](https://cdn-images-1.medium.com/max/1000/1*YCABimP7x1wZZZKqz2CoyQ.png)   
+   
+The stochastic policy is used when the environment is uncertain. We call this process a Partially Observable Markov Decision Process (POMDP).   
+Most of the time we’ll use this second type of policy.    
+
+**Advantages**: But Deep Q Learning is really great! Why using policy-based reinforcement learning methods?   
+- For one, policy-based methods have better convergence properties. The problem with value-based methods is that they can have a big oscillation while training. This is because the choice of action may change dramatically for an arbitrarily small change in the estimated action values. On the other hand, with policy gradient, we just follow the gradient to find the best parameters. We see a smooth update of our policy at each step.
+- Policy gradients are more effective in high dimensional action spaces
+![Alt Text](https://cdn-images-1.medium.com/max/1000/1*_hAkM4RIxjKjKqAYFR_9CQ.png)
+   
+- A third advantage is that policy gradient can learn a stochastic policy, while value functions can’t.   
+A stochastic policy allows our agent to explore the state space without always taking the same action. This is because it outputs a probability distribution over actions. As a consequence, it handles the exploration/exploitation trade off without hard coding it
+
+**Disadvantages**:   
+Naturally, Policy gradients have one big disadvantage. A lot of the time, they converge on a local maximum rather than on the global optimum.   
+Instead of Deep Q-Learning, which always tries to reach the maximum, policy gradients converge slower, step by step. They can take longer to train.   
 
 Here, we consider the case of a stochastic, parameterized policy, ![](https://spinningup.openai.com/en/latest/_images/math/80088cfe6126980142c5447a9cb12f69ee7fa333.svg). We aim to maximize the expected return ![Alt Text](https://spinningup.openai.com/en/latest/_images/math/48ffbf0dd0274a46574e145ea23e4c174f6dfaa3.svg). For the purposes of this derivation, we’ll take R(tau) to give the finite-horizon undiscounted return, but the derivation for the infinite-horizon discounted return setting is almost identical.
-
+   
+There are two steps:   
+- Measure the quality of a π (policy) with a policy score function J(θ)   
+- Use policy gradient ascent to find the best parameter θ that improves our π.   
+   
 We would like to optimize the policy by gradient ascent, eg
 <p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/237c86938ce2e9de91040e4090f79c6a1125fc00.svg"></p> 
 This is an expectation, which means that we can estimate it with a sample mean. If we collect a set of trajectories where each trajectory is obtained by letting the agent act in the environment using the policy, the policy gradient can be estimated with
