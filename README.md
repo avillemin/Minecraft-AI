@@ -183,10 +183,10 @@ VPG trains a stochastic policy in an on-policy way. This means that it explores 
 
 # Q-Learning
 
-![Eligibility](https://github.com/avillemin/Minecraft-AI/blob/master/eligibilityTrace.PNG)   
+![Eligibility](https://github.com/avillemin/Minecraft-AI/blob/master/img/eligibilityTrace.PNG)   
    
-![](https://github.com/avillemin/Minecraft-AI/blob/master/result%20nstep%20learning.PNG)  
+![](https://github.com/avillemin/Minecraft-AI/blob/master/img/result%20nstep%20learning.PNG)  
    
-![](https://github.com/avillemin/Minecraft-AI/blob/master/n-step%20TD.PNG)   
+![](https://github.com/avillemin/Minecraft-AI/blob/master/img/n-step%20TD.PNG)   
 
 n-step Sarsa can be seen as a on-policy n-step Q-learning
