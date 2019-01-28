@@ -1,172 +1,57 @@
-from __future__ import print_function
-
-from builtins import range
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import time
-from Agent import Agent
-
-actions = ['movenorth 1', 'movesouth 1', 'movewest 1', 'moveeast 1', 'movesouth 1', 'movesouth 1', 'movesouth 1'] #increase the probability to go straight
-nb_actions = 4
-height = 64
-width = 64
-max_retries = 3
-latent_size = 16
-nb_episodes = 100
-total_reward = []
-previous_img = []
-action = 2
-mission_file = './maze.xml'
-batch_img = torch.empty([0,3,height,width])
-
-def img_process():
-    video_frame = world_state.video_frames[-1].pixels
-    video_frame = np.reshape(np.array(video_frame), (world_state.video_frames[-1].height,world_state.video_frames[-1].width,4))
-    global test
-    test = video_frame[:,:,:3]
-    img = video_frame[:,:,:3]
-#    plt.imshow(img)
-#    plt.show()
-#    img = resize(img, (height,width,3))
-    img = np.transpose(img, (2, 0, 1))
-    img = img.astype('float32') / 255.
-    img = torch.Tensor(img)
-    img = img.view((1,3,height,width))
-    return img
-
-agent = Agent(mission_file)
-
-from dql_vae import DQN
-dql = DQN(gamma=0.8,latent_size=latent_size,nb_actions=nb_actions)
-
-for episode in range(nb_episodes):   
-    nb_action_done = 0
-    print()
-    print('Repeat %d of %d' % ( episode, nb_episodes ))
-    
-    agent_host = agent.init(max_retries)
-    
-    cumulative_reward = 0
-    # Loop until mission starts:
-    world_state = agent_host.getWorldState()
-    while not world_state.has_mission_begun:
-        time.sleep(0.1)
-        world_state = agent_host.getWorldState()
-        for error in world_state.errors:
-            print("Error:",error.text)
-    
-    #First action
-    if world_state.is_mission_running:
-        while len(world_state.video_frames)<1 and world_state.is_mission_running:
-            time.sleep(0.05)
-            world_state = agent_host.getWorldState() 
-        img = img_process()
-        batch_img = torch.cat((batch_img,img),0)
-#        plt.axis('off')
-#        plt.imshow(test)
-#        plt.show()
-        agent_host.sendCommand(actions[2])
-        nb_action_done+=1
-    
-    # Loop until mission ends:
-    while world_state.is_mission_running:
-        world_state = agent_host.getWorldState()
-        current_r = 0
-        while world_state.number_of_video_frames_since_last_state < 1 and world_state.is_mission_running:
-            time.sleep(0.05)
-            world_state = agent_host.getWorldState()  
-            
-        try:previous_img,img = img,img_process() 
-        except:time.sleep(0.05)
-        
-        if world_state.number_of_rewards_since_last_state > 0:
-            for reward in world_state.rewards:
-                current_r += reward.getValue()
-            cumulative_reward += current_r
-            dql.replayMemoryPush(previous_img, img, action, current_r, abs(current_r)<0.5,1000)
-            batch_img = torch.cat((batch_img,img),0)
-            action = np.random.randint(nb_actions)
-            agent_host.sendCommand(actions[action])
-            nb_action_done+=1
-    if current_r > 0.5:
-        print('Success')
-    print('Number of moves: ',nb_action_done)
-         
-        
-            
-#print('Number of images: ',batch_img.size())
-#
+from Agent import Agent, train_one_epoch
 from VAE import ConvVAE
-vae = ConvVAE(img_channels = 3, latent_size = latent_size, learning_rate = 0.0001)
-temp = vae.train(batch_img,batch_size=128,nb_epochs = 50)
+from MDNRNN import MDNRNN 
 
-vae.display_reconstruction(batch_img,100)
-#vae.save() 
-#vae.load('./models/test')
-    
-# LEARNING OF THE DQL NETWORK
-for i in range(3000):
-    batch_imgs,batch_next_imgs,batch_actions,batch_current_rs,batch_not_dones = dql.replayMemorySample(128*2*2)    
-    batch_imgs = torch.cat(batch_imgs)
-    batch_next_imgs = torch.cat(batch_next_imgs)
-    batch_actions = torch.cat(batch_actions)
-    batch_current_rs = torch.cat(batch_current_rs)
-    batch_not_dones = torch.cat(batch_not_dones) 
-    dql.learn(vae,batch_imgs,batch_next_imgs,batch_actions,batch_current_rs,batch_not_dones) 
+class HPS():
+    def __init__(self):
+        self.actions = ['movenorth 1', 'movesouth 1', 'movewest 1', 'moveeast 1']
+        self.nb_actions = len(self.actions)
+        self.height = 64
+        self.width = 64
+        self.max_retries = 3
+        self.latent_size = 16
+        self.nb_episodes = 400
+#        self.episode_length = 40
+        self.total_reward = []
+        self.previous_img = []
+        self.action = 2
+        self.mission_file = './maze.xml'
+        self.batch_img = torch.empty([0,3,self.height,self.width])
         
-#events = dql.memory
-#dql.memory = events
+hps = HPS()
+agent = Agent(hps.mission_file)     
 
-for episode in range(nb_episodes):   
-    nb_action_done = 0
-    print()
-    print('Repeat %d of %d' % ( episode, nb_episodes ))
-    
-    agent_host = agent.init(max_retries)
-    
-    cumulative_reward = 0
-    # Loop until mission starts:
-    world_state = agent_host.getWorldState()
-    while not world_state.has_mission_begun:
-        time.sleep(0.1)
-        world_state = agent_host.getWorldState()
-        for error in world_state.errors:
-            print("Error:",error.text)
-    
-    #First action
-    if world_state.is_mission_running:
-        while len(world_state.video_frames)<1 and world_state.is_mission_running:
-            time.sleep(0.05)
-            world_state = agent_host.getWorldState() 
-        img = img_process()
-        batch_img = torch.cat((batch_img,img),0)
-#        plt.axis('off')
-#        plt.imshow(test)
-#        plt.show()
-        agent_host.sendCommand(actions[2])
-        nb_action_done+=1
-    
-    # Loop until mission ends:
-    while world_state.is_mission_running:
-        world_state = agent_host.getWorldState()
-        current_r = 0
-        while world_state.number_of_video_frames_since_last_state < 1 and world_state.is_mission_running:
-            time.sleep(0.05)
-            world_state = agent_host.getWorldState()  
-            
-        try:previous_img,img = img,img_process() 
-        except:time.sleep(0.05)
-        
-        if world_state.number_of_rewards_since_last_state > 0:
-            for reward in world_state.rewards:
-                current_r += reward.getValue()
-            cumulative_reward += current_r
-            dql.replayMemoryPush(previous_img, img, action, current_r, abs(current_r)<0.5,1000)
-            batch_img = torch.cat((batch_img,img),0)
-            action = dql.select_action(vae.encode(img),episode)
-            agent_host.sendCommand(actions[action])
-            nb_action_done+=1
-    if current_r > 0.5:
-        print('Success')
-    print('Number of moves: ',nb_action_done)
+vae = ConvVAE(img_channels = 3, latent_size = hps.latent_size, learning_rate = 0.0001, load=True)
+#vae.display_reconstruction(hps.batch_obs_temp,-1)
+
+batch_obs, batch_act, batch_weight, batch_done = [], [], [], []
+for episode in range(hps.nb_episodes):
+    obs, acts, weights= train_one_epoch(agent,hps)
+    if obs.size(0)>1:
+        batch_obs.append(obs)
+        batch_weight.append(torch.tensor(weights,dtype=torch.float32))
+        batch_act.append(acts)
+        batch_done.append(torch.tensor((len(acts)-1)*[0]+[1],dtype=torch.float32))
+    if episode%int(hps.nb_episodes/10)==0:print('Epoch :',episode)
+
+mdnrnn = MDNRNN(latent_size = hps.latent_size,input_size = hps.latent_size + len(hps.actions), rnn_hidden_size = 256)
+input_obs, input_act, target_done, target_reward, target_obs, mask = mdnrnn.preprocess(vae, batch_obs, batch_act,batch_done, batch_weight, hps.nb_actions) 
+mdnrnn.train(input_obs, target_obs, input_act, target_done, target_reward, mask, 3000)
+plt.plot(mdnrnn.losses)
+
+image = obs[0,:,:,:]
+action = 1
+encoded_image = vae.encode(image.unsqueeze(0))
+(logpi, mu, sigma), hidden = mdnrnn.forward(encoded_image[0], action, hps)
+rec_img = torch.normal(mu, sigma.exp())[0,0,:,:16]
+vae.plot_encoded(rec_img)
+vae.plot_encoded(image.unsqueeze(0),encoded=False)
+
+img, done, reward = mdnrnn.play_in_dreams(image.unsqueeze(0), vae, hps)
+
+vae.plot_encoded(img.unsqueeze(0))
+
+vae.display_reconstruction(image.unsqueeze(0),-1)

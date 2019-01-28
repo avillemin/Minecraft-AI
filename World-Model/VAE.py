@@ -10,6 +10,8 @@ import torch
 
 import imageio as io
 
+import matplotlib.pyplot as plt
+
 
 # In[23]:
 
@@ -93,7 +95,7 @@ class VAE(nn.Module):
 
 
 class ConvVAE():
-    def __init__(self,img_channels, latent_size, learning_rate):
+    def __init__(self,img_channels, latent_size, learning_rate, load = False):
         self.cuda = torch.cuda.is_available()
         self.device = torch.device("cuda" if self.cuda else "cpu")
         print("ConVAE running on GPU" if self.cuda else "ConVAE running on CPU")
@@ -105,6 +107,8 @@ class ConvVAE():
         self.KLDs = []
         self.latent_size = latent_size
         self.epoch_trained = 0
+        if load:
+            self.load('./models/ConvVAE'+str(latent_size))
         
     def train(self, batch_img, batch_size, nb_epochs):
         demo = []
@@ -135,8 +139,8 @@ class ConvVAE():
             if epoch%max(int(nb_epochs/10),1)==0:
                 print(f'Epoch {epoch+self.epoch_trained}: loss = {round(float(loss_epoch),4)}') #CHECK THIS LINE, voir s on peut utiliser tdqm
                 demo.append(self.save_figure(batch_img))
-        io.mimsave('./figures/training_epochs='+str(nb_epochs)+'_images='+str(batch_img.size(0))+'_latent='+str(self.latent_size)+'.gif', demo, duration = 0.55)       
         self.epoch_trained += nb_epochs
+        io.mimsave('./figures/training_epochs='+str(self.epoch_trained)+'_images='+str(batch_img.size(0))+'_latent='+str(self.latent_size)+'.gif', demo, duration = 0.55)            
         return recon_x
         
     def __call__(self,batch_img):
@@ -148,6 +152,10 @@ class ConvVAE():
         epsilon = torch.randn_like(sigma)
         z = epsilon.mul(sigma).add_(mu).detach()
         return z
+
+    def decode(self,z):
+        batch_img = self.model.decoder(z).detach()
+        return batch_img
 
     def display_reconstruction(self,batch_img, id_img):
         recon_batch_img = self.model(batch_img[id_img,:,:,:].unsqueeze(0).to(self.device))[0].detach()
@@ -176,7 +184,6 @@ class ConvVAE():
         
     def save_figure(self,batch_img):
         recon_batch_img = self.model(batch_img[0,:,:,:].unsqueeze(0).to(self.device))[0].detach()
-        import matplotlib.pyplot as plt
         
         fig = plt.figure(figsize = (10,16))            
         plt.subplot(3,2,1)
@@ -226,3 +233,10 @@ class ConvVAE():
         self.optimizer.load_state_dict(torch.load(path+'_optimizer.pt', map_location=self.device))
         self.model.eval()
         print('Model and Optimizer loaded')
+        
+    def plot_encoded(self, batch_z, encoded=True):
+        batch_img = self.decode(batch_z) if encoded else batch_z
+        for img in batch_img:
+            plt.imshow(np.transpose(img, (1,2,0)))
+            plt.axis('off')
+            plt.show()
