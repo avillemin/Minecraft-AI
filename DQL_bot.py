@@ -186,10 +186,10 @@ for episode in range(nb_episodes):
                 batch_not_done = torch.cat(batch_not_done)
                 ai.learn(batch_img,batch_next_img,batch_action,batch_current_r,batch_not_done)
             else:
-                while True:
-                    world_state = agent_host.getWorldState()
-                    if len(world_state.video_frames)>0:
-                        break
+#                while True:
+#                    world_state = agent_host.getWorldState()
+#                    if len(world_state.video_frames)>0:
+#                        break
                 print ('Next frame not available')
                 
         cumulative_reward+=current_r
