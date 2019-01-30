@@ -26,15 +26,17 @@ class MDNRNN_network(nn.Module):
         
     def forward(self, x, h):
         y, (h, c) = self.rnn(x, h)
-        
         prob_rewards = F.softmax(self.fc_reward(y.data), dim=-1)
         prob_done = torch.sigmoid(self.fc_done(y.data))
         y = self.fc1(y.data)      
-        pi, mu, logsigma = torch.split(y, self.n_gaussians*self.latent_size, dim=-1)
-        pi = pi.view(-1, self.n_gaussians, self.latent_size)
+        logpi, mu, logsigma = torch.split(y, self.n_gaussians*self.latent_size, dim=-1)
+        logpi = logpi.view(-1, self.n_gaussians, self.latent_size)
         mu = mu.view(-1, self.n_gaussians, self.latent_size)
-        logsigma = logsigma.view(-1, self.n_gaussians, self.latent_size)            
-        logpi = F.log_softmax(pi, 2)
+        logsigma = logsigma.view(-1, self.n_gaussians, self.latent_size) 
+#        print('test2',logpi.sum(dim=-2))           
+        logpi = F.log_softmax(logpi, 1)
+#        print('test',logpi.exp().sum(dim=1))
+#        print(logpi.size())
         
         return prob_rewards, prob_done, (logpi, mu, logsigma), (h, c)
         
@@ -42,7 +44,7 @@ class MDNRNN_network(nn.Module):
         return torch.zeros(2, self.n_layers, batch_size, self.rnn_hidden_size) #number of layers, batch size, rnn_hidden_size
         
 class MDNRNN():
-    def __init__(self, latent_size, input_size, rnn_hidden_size, possible_rewards, dropout_rnn=0, n_gaussians = 5, n_layers = 1, learning_rate = 0.00001):
+    def __init__(self, latent_size, input_size, rnn_hidden_size, possible_rewards, dropout_rnn=0, n_gaussians = 5, n_layers = 1, learning_rate = 0.0001):
         self.cuda = torch.cuda.is_available()
         self.possible_rewards = possible_rewards
         self.device = torch.device("cuda" if self.cuda else "cpu")
@@ -102,7 +104,7 @@ class MDNRNN():
         normal_dist = torch.distributions.Normal(loc=mu, scale=logsigma.exp())
         loss = logpi + normal_dist.log_prob(y)
         loss = torch.logsumexp(loss, 2)
-        return loss.mean()
+        return - loss.mean()
     
     def preprocess(self, vae, list_obs, list_actions, list_dones, list_weights, hps):
         nb_actions = hps.nb_actions
@@ -146,12 +148,10 @@ class MDNRNN():
             action = int(input('Choose action: '))
             if action>=hps.nb_actions: break
             prob_rewards, prob_done, (logpi, mu, logsigma), hidden = self.forward(current_frame, action, hps, hidden)
-            print(logpi.size(),first_frame.size())
             img = torch.normal(mu, logsigma.exp())[0,:,:]
-            print(img.size())
             pi = logpi[0,:,:].exp()
+            print(pi.sum(dim = 0))
             output = (pi*img).sum(dim = 0)
-            print(output)
             vae.plot_encoded(output.unsqueeze(0))
             print('Reward: ',prob_rewards)
             print('Done: ',prob_done)

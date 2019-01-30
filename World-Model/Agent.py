@@ -90,7 +90,7 @@ def train_one_epoch(agent, hps, random_actions=True):
 #        plt.axis('off')
 #        plt.imshow(test)
 #        plt.show()
-        action = 2
+        action = random_policy(hps, first_action = True)
         batch_action = [action]
         agent_host.sendCommand(hps.actions[action])
         nb_action_done+=1
@@ -136,7 +136,12 @@ def img_process(world_state, hps):
     img = img.view((1,3,hps.height,hps.width))
     return img
 
-def random_policy(hps):
-    acts = hps.actions + ['movesouth 1']*3
-    action = np.random.randint(len(acts))
-    return action if action < hps.nb_actions else 1
+def random_policy(hps, first_action = False):
+    if first_action:
+        acts = hps.actions + ['movewest 1']*3
+        action = np.random.randint(len(acts))
+        return action if action < hps.nb_actions else 2        
+    else:
+        acts = hps.actions + ['movesouth 1']*3
+        action = np.random.randint(len(acts))
+        return action if action < hps.nb_actions else 1

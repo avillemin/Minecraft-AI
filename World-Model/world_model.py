@@ -14,7 +14,7 @@ class HPS():
         self.width = 64
         self.max_retries = 3
         self.latent_size = 16
-        self.nb_episodes = 400
+        self.nb_episodes = 30000
 #        self.episode_length = 40
         self.total_reward = []
         self.previous_img = []
@@ -39,21 +39,20 @@ for episode in range(hps.nb_episodes):
         batch_done.append(torch.tensor((len(acts)-1)*[0]+[1],dtype=torch.float32))
     if episode%int(hps.nb_episodes/10)==0:print('Episode :',episode)
 
-mdnrnn = MDNRNN(latent_size = hps.latent_size,input_size = hps.latent_size + len(hps.actions), rnn_hidden_size = 256, possible_rewards = hps.possible_rewards)
-input_obs, input_act, target_done, target_reward, target_obs, mask = mdnrnn.preprocess(vae, batch_obs, batch_act,batch_done, batch_weight, hps) 
-mdnrnn.train(input_obs, target_obs, input_act, target_done, target_reward, mask, 1)
-
+#mdnrnn = MDNRNN(latent_size = hps.latent_size,input_size = hps.latent_size + len(hps.actions), rnn_hidden_size = 256, possible_rewards = hps.possible_rewards)
+#input_obs, input_act, target_done, target_reward, target_obs, mask = mdnrnn.preprocess(vae, batch_obs, batch_act,batch_done, batch_weight, hps) 
+#mdnrnn.train(input_obs, target_obs, input_act, target_done, target_reward, mask, 1)
+#
 mdnrnn_pack = MDNRNN_pack(latent_size = hps.latent_size,input_size = hps.latent_size + len(hps.actions), rnn_hidden_size = 256, possible_rewards = hps.possible_rewards)
 input_obs, input_act, target_done, target_reward, target_obs, mask = mdnrnn_pack.preprocess(vae, batch_obs, batch_act,batch_done, batch_weight, hps)
-mdnrnn_pack.train(input_obs, target_obs, input_act, target_done, target_reward, mask, 1000)
+mdnrnn_pack.train(input_obs, target_obs, input_act, target_done, target_reward, mask, 10000)
 
 
 image = obs[0,:,:,:]
 action = 1
 encoded_image = vae.encode(image.unsqueeze(0))
-(logpi, mu, sigma), hidden = mdnrnn.forward(encoded_image[0], action, hps)
-rec_img = torch.normal(mu, sigma.exp())[0,0,:,:16]
-vae.plot_encoded(rec_img)
+#vae.plot_encoded(input_obs[4,:3,:])
+#vae.plot_encoded(target_obs[4,:2,:])
 vae.plot_encoded(image.unsqueeze(0),encoded=False)
 
 img, done, reward = mdnrnn_pack.play_in_dreams(image.unsqueeze(0), vae, hps)
