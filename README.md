@@ -178,10 +178,47 @@ The formulation of policy gradients with advantage functions is extremely common
      
 VPG trains a stochastic policy in an on-policy way. This means that it explores by sampling actions according to the latest version of its stochastic policy. The amount of randomness in action selection depends on both initial conditions and the training procedure. Over the course of training, the policy typically becomes progressively less random, as the update rule encourages it to exploit rewards that it has already found. This may cause the policy to get trapped in local optima.   
   
+<p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/47a7bd5139a29bc2d2dc85cef12bba4b07b1e831.svg"></p>
+    
+# Deep Q-Learning
    
-<p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/47a7bd5139a29bc2d2dc85cef12bba4b07b1e831.svg"></p>   
+https://jaromiru.com/2016/09/27/lets-make-a-dqn-theory/   
+   
+Let’s define a function Q(s, a) such that for given state s and action a it returns an estimate of a total reward we would achieve starting at this state, taking the action and then following some policy.
 
-# Q-Learning
+<p align="center"><img src="https://s0.wp.com/latex.php?latex=Q%28s%2C+a%29+%3D+r+%2B+%5Cgamma+max_a+Q%28s%27%2C+a%29&bg=ffffff&fg=242424&s=0&zoom=2"></p>
+
+**Experience replay**: The key idea of experience replay is that we store these transitions in our memory and during each learning step, sample a random batch and perform a gradient descend on it. Lastly, because our memory is finite, we can typically store only a limited number of samples. Because of this, after reaching the memory capacity we will simply discard the oldest sample.
+
+**Exploration**:  A simple technique to resolve this is called ε-greedy policy. This policy behaves greedily most of the time, but chooses a random action with probability ε.   
+   
+**Target Network**: As a cat chasing its own tale, the network sets itself its targets and follows them. As you can imagine, this can lead to instabilities, oscillations or divergence. To overcome this problem, researches proposed to use a separate target network for setting the targets. This network is a mere copy of the previous network, but frozen in time. It provides stable Q~ values and allows the algorithm to converge to the specified target:    
+![](https://s0.wp.com/latex.php?latex=Q%28s%2C+a%29+%5Cxrightarrow%7B%7D+r+%2B+%5Cgamma+max_a+%5Ctilde%7BQ%7D%28s%27%2C+a%29&bg=ffffff&fg=242424&s=0&zoom=2)      
+   
+After severals steps, the target network is updated, just by copying the weights from the current network. To be effective, the interval between updates has to be large enough to leave enough time for the original network to converge.   
+A drawback is that it substantially slows down the learning process. Any change in the Q function is propagated only after the target network update. The intervals between updated are usually in order of thousands of steps, so this can really slow things down.
+
+<p align="center"><img src="https://jaromiru.files.wordpress.com/2016/10/cartpole_target_vs_single_2.png?w=700&zoom=2"></p>
+   
+The version with target network smoothly aim for the true value whereas the simple Q-network shows some oscillations and difficulties. Although sacrificing speed of learning, this added stability allows the algorithm to learn correct behaviour in much complicated environments, such as those described in the original paper – playing Atari games receiving only visual input.
+
+Full DQN = Q-Learning with target network and error clipping.
+
+**Double Learning**: One problem in the DQN algorithm is that the agent tends to overestimate the Q function value, due to the max in the formula used to set targets. A solution to this problem was proposed by Hado van Hasselt (2010) and called Double Learning. In this new algorithm, two Q functions – Q_1 and Q_2 – are independently learned. One function is then used to determine the maximizing action and second to estimate its value. Either Q_1 or Q_2 is updated randomly with a formula:
+
+<p align="center"><img src="https://s0.wp.com/latex.php?latex=Q_1%28s%2C+a%29+%5Cxrightarrow%7B%7D+r+%2B+%5Cgamma+Q_2%28s%27%2C+argmax_a+Q_1%28s%27%2C+a%29%29+&bg=ffffff&fg=242424&s=0&zoom=2"></p>
+<p align="center"><img src="https://s0.wp.com/latex.php?latex=Q_2%28s%2C+a%29+%5Cxrightarrow%7B%7D+r+%2B+%5Cgamma+Q_1%28s%27%2C+argmax_a+Q_2%28s%27%2C+a%29%29+&bg=ffffff&fg=242424&s=0&zoom=2"></p>
+   
+It was proven that by decoupling the maximizing action from its value in this way, one can indeed eliminate the maximization bias. The Deep Reinforcement Learning with Double Q-learning paper reports that although Double DQN (DDQN) does not always improve performance, it substantially benefits the stability of learning. This improved stability directly translates to ability to learn much complicated tasks.   
+When testing DDQN on 49 Atari games, it achieved about twice the average score of DQN with the same hyperparameters. With tuned hyperparameters, DDQN achieved almost four time the average score of DQN.   
+
+**Prioritized Experience Replay**: The main idea is that we prefer transitions that does not fit well to our current estimate of the Q function, because these are the transitions that we can learn most from. This reflects a simple intuition from our real world – if we encounter a situation that really differs from our expectation, we think about it over and over and change our model until it fits.   
+See: https://jaromiru.com/2016/11/07/lets-make-a-dqn-double-learning-and-prioritized-experience-replay/   
+We can define an error of a sample S = (s, a, r, s’) as a distance between the Q(s, a) and its target T(S). We will store this error in the agent’s memory along with every sample and update it with each learning step. We will then tanslate this error to a probability of being chosen for replay. Then, we create a binary tree which will be use to sample efficently our memory.  
+   
+Tests performed on 49 Atari games showed that PER really translates into faster learning and higher performance3. What’s more, it’s complementary to DDQN.
+DQN = 100%, DQN+PER = 291%, DDQN = 343%, DDQ+PER = 451%
+An implementation of DDQN+PER for an Atari game Seaquest is available here: https://github.com/jaromiru/AI-blog/blob/master/Seaquest-DDQN-PER.py
 
 ![Eligibility](https://github.com/avillemin/Minecraft-AI/blob/master/img/eligibilityTrace.PNG)   
    
