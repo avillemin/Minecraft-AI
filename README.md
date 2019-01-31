@@ -6,11 +6,7 @@ AI realized:
 - Q-Learning : the bot has to reach a blue block without falling in the lava. The bot takes as input his current position. With this, he has to choose an action and wait for the reward. The maze stay the same during all the training and test.
 - Deep Q-Learning : the bot has to reach a blue block in a map which changes at each try. He should not fall in the lava. The input is now the image seen by the bot. The AI is implemented with replay memory and eligibility trace.
 
-I used pyTorch to realize the two bots.
-
-The file DQL_bot.py create the Minecraft environment and build the map. Then, it will realize the actions chosen by the neural network created in DQL_network.py.
-
-The next steps of this project will be to apply Augmented Random Search and A3C on the same environment to compare the results.
+The next steps of this project will be to apply a World Model and A3C on the same environment to compare the results.
 
 ```bash
 >> cd C:\Users\avillemin\Pictures\Malmo-0.36.0-Windows-64bit_withBoost_Python3.6\Minecraft
@@ -19,24 +15,39 @@ The next steps of this project will be to apply Augmented Random Search and A3C 
 
 Environment used : https://github.com/Microsoft/malmo
 
-N-step Q-learning : https://papoudakis.github.io/announcements/qlearning/  
-Deep reinforcement learning https://arxiv.org/pdf/1312.5602.pdf  
-Asynchronous Methods for Deep Reinforcement Learning : https://arxiv.org/pdf/1602.01783.pdf  
-
 <p align="center"><img src="https://github.com/avillemin/Minecraft-AI/blob/master/World-Model/figures/VAE.png"></p>
-   
+
+
 # Reinforcement Learning
 
 [Source] https://spinningup.openai.com/en/latest/index.html
 
+1. [Reinforcement Learning Introduction](#RL)   
+   a. [The Off-Policy Algorithms](#off)   
+   b. [The On-Policy Algorithms](#on)   
+   c. [Bellman Equations](#Bellman)     
+   d. [Kinds of RL Algorithms](#kinds)   
+   e. [Model-Free vs Model-Based RL](#models)   
+2. [Simplest Policy Gradient](#simplest)     
+3. [Reward-to-Go Policy Gradient](#togo)   
+4. [Baselines in Policy Gradients](#baselines) 
+5. [Other Forms of the Policy Gradient](#others)
+6. [Vanilla Policy Gradient](#vanilla)
+7. [Deep Q-Learning](#DQN)
+8. [Asynchronous Advantage Actor-Critic](#a3c)
+9. [World Models](#world)
+
+<a name="RL"></a>
+
+<a name="off"></a>
 ## The Off-Policy Algorithms
    
 Algorithms like DDPG and Q-Learning are off-policy, so they are able to reuse old data very efficiently. They gain this benefit by exploiting Bellman’s equations for optimality, which a Q-function can be trained to satisfy using any environment interaction data (as long as there’s enough experience from the high-reward areas in the environment).   
-   
+<a name="on"></a>   
 ## The On-Policy Algorithms   
    
 They don’t use old data, which makes them weaker on sample efficiency. But this is for a good reason: these algorithms directly optimize the objective you care about—policy performance—and it works out mathematically that you need on-policy data to calculate the updates. So, this family of algorithms trades off sample efficiency in favor of stability—but you can see the progression of techniques (from VPG to TRPO to PPO) working to make up the deficit on sample efficiency.   
-   
+<a name="Bellman"></a>   
 ### Bellman Equations   
 Finite-horizon undiscounted return:  
 <p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/ce20ca1d911ea7b3b9161000c52ed750ec75cc14.svg"></p>  
@@ -53,11 +64,13 @@ There is a key connection between the value function and the action-value functi
 <p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/45dfe72ba680d985e158c2fef08ddfbb9c5f57a6.svg"></p>
 Advantage function:   
 <p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/a596eb68ba26e424afaff142ae747d5cffd2be60.svg"></p>
-   
+
+<a name="kinds"></a>    
 # Kinds of RL Algorithms
 
 ![Alt text](https://spinningup.openai.com/en/latest/_images/rl_algorithms_9_15.svg)
 
+<a name="models"></a> 
 ## Model-Free vs Model-Based RL
 
    One of the most important branching points in an RL algorithm is the question of whether the agent has access to (or learns) a model of the environment. By a model of the environment, we mean a function which predicts state transitions and rewards.   
@@ -69,7 +82,7 @@ What to learn:
 - action-value functions (Q-functions),
 - value functions,
 - and/or environment models.
-
+<a name="simplest"></a> 
 # Simplest Policy Gradient   
    
 We have our policy π that has a parameter θ. This π outputs a probability distribution of actions.   
@@ -114,7 +127,7 @@ We would like to optimize the policy by gradient ascent, eg
 This is an expectation, which means that we can estimate it with a sample mean. If we collect a set of trajectories where each trajectory is obtained by letting the agent act in the environment using the policy, the policy gradient can be estimated with
 <p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/a8ec906d99c7cb540ef0df80d86fa1bca0f33a79.svg"></p> 
 
-
+<a name="togo"></a>
 # Reward-to-Go Policy Gradient   
    
 In the method above, I took the sum of all rewards ever obtained. But this doesn’t make much sense.   
@@ -131,7 +144,8 @@ But how is this better? A key problem with policy gradients is how many sample t
    
 An (optional) proof of this claim can be found here, and it ultimately depends on the EGLP (Expected Grad-Log-Prob) lemma. Suppose that P{theta} is a parameterized probability distribution over a random variable, x. Then:
 <p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/458b0eb0829ecd27ff745f9329fdc0fbd56295bf.svg"></p>  
-   
+
+<a name="baselines"></a>   
 # Baselines in Policy Gradients   
    
 An immediate consequence of the EGLP lemma is that for any function b which only depends on state,
@@ -154,6 +168,7 @@ The simplest method for learning V_{\phi}, used in most implementations of polic
 
 where π_k is the policy at epoch k. This is done with one or more steps of gradient descent, starting from the previous value parameters ![](https://spinningup.openai.com/en/latest/_images/math/7681f537ec31c9bc1c811dd0f33f46aa9aaabebf.svg).
 
+<a name="others"></a>
 # Other Forms of the Policy Gradient
 
 What we have seen so far is that the policy gradient has the general form
@@ -168,7 +183,7 @@ All of these choices lead to the same expected value for the policy gradient, de
 **2. The Advantage Function.** Recall that the advantage of an action describes how much better or worse it is than other actions on average (relative to the current policy). This choice, ![](https://spinningup.openai.com/en/latest/_images/math/06e42f4a5a133c3a56d70aaa098c23c3f0a37df2.svg) is also valid.   
    
 The formulation of policy gradients with advantage functions is extremely common, and there are many different ways of estimating the advantage function used by different algorithms.   
-
+<a name="vanilla"></a>
 # Vanilla Policy Gradient
 
 - VPG is an on-policy algorithm.
@@ -179,7 +194,8 @@ The formulation of policy gradients with advantage functions is extremely common
 VPG trains a stochastic policy in an on-policy way. This means that it explores by sampling actions according to the latest version of its stochastic policy. The amount of randomness in action selection depends on both initial conditions and the training procedure. Over the course of training, the policy typically becomes progressively less random, as the update rule encourages it to exploit rewards that it has already found. This may cause the policy to get trapped in local optima.   
   
 <p align="center"><img src="https://spinningup.openai.com/en/latest/_images/math/47a7bd5139a29bc2d2dc85cef12bba4b07b1e831.svg"></p>
-    
+
+<a name="DQN"></a>   
 # Deep Q-Learning
    
 https://jaromiru.com/2016/09/27/lets-make-a-dqn-theory/   
@@ -228,6 +244,7 @@ An implementation of DDQN+PER for an Atari game Seaquest is available here: http
 
 n-step Sarsa can be seen as a on-policy n-step Q-learning
 
+<a name="a3c"></a>
 # Asynchronous Advantage Actor-Critic
   
 https://jaromiru.com/2017/02/16/lets-make-an-a3c-theory/   
@@ -300,3 +317,9 @@ Averaging over all samples in a batch, L_{reg} is then set to:
 <p align="center"><img src="https://s0.wp.com/latex.php?latex=L_%7Breg%7D+%3D+-+%5Cfrac%7B1%7D%7Bn%7D%5Csum_%7Bi%3D1%7D%5E%7Bn%7D+H%28%5Cpi%28s_i%29%29&bg=ffffff&fg=242424&s=0&zoom=2"></p>
 
 In the tutorial, they took c_v = 0.5 and C_reg = 0.01
+<a name="world"></a>
+# World Models
+
+My dedicated repository: https://github.com/avillemin/SuperDataScience-Courses/tree/master/Hybrid%20AI
+
+<p align="center"><img src="https://camo.githubusercontent.com/2ba6231c44dc4871d5ed65ed7ddf4b8a1e03a91b/68747470733a2f2f776f726c646d6f64656c732e6769746875622e696f2f6173736574732f776f726c645f6d6f64656c5f736368656d617469632e737667"></p>
