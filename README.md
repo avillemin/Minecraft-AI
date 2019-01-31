@@ -15,9 +15,6 @@ The next steps of this project will be to apply a World Model and A3C on the sam
 
 Environment used : https://github.com/Microsoft/malmo
 
-<p align="center"><img src="https://github.com/avillemin/Minecraft-AI/blob/master/World-Model/figures/VAE.png"></p>
-
-
 # Reinforcement Learning
 
 [Source] https://spinningup.openai.com/en/latest/index.html
