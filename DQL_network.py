@@ -5,6 +5,10 @@ from torch.autograd import Variable
 import torch.optim as optim
 import torch
 
+import matplotlib.pyplot as plt
+import matplotlib
+#%matplotlib auto
+
 from collections import namedtuple
 import random
 
