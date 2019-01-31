@@ -217,7 +217,7 @@ See: https://jaromiru.com/2016/11/07/lets-make-a-dqn-double-learning-and-priorit
 We can define an error of a sample S = (s, a, r, s’) as a distance between the Q(s, a) and its target T(S). We will store this error in the agent’s memory along with every sample and update it with each learning step. We will then tanslate this error to a probability of being chosen for replay. Then, we create a binary tree which will be use to sample efficently our memory.  
    
 Tests performed on 49 Atari games showed that PER really translates into faster learning and higher performance3. What’s more, it’s complementary to DDQN.
-DQN = 100%, DQN+PER = 291%, DDQN = 343%, DDQ+PER = 451%
+DQN = 100%, DQN+PER = 291%, DDQN = 343%, DDQ+PER = 451%   
 An implementation of DDQN+PER for an Atari game Seaquest is available here: https://github.com/jaromiru/AI-blog/blob/master/Seaquest-DDQN-PER.py
 
 ![Eligibility](https://github.com/avillemin/Minecraft-AI/blob/master/img/eligibilityTrace.PNG)   
@@ -227,3 +227,76 @@ An implementation of DDQN+PER for an Atari game Seaquest is available here: http
 ![](https://github.com/avillemin/Minecraft-AI/blob/master/img/n-step%20TD.PNG)   
 
 n-step Sarsa can be seen as a on-policy n-step Q-learning
+
+# Asynchronous Advantage Actor-Critic
+  
+https://jaromiru.com/2017/02/16/lets-make-an-a3c-theory/   
+First, agent’s actions are determined by a stochastic policy π(s). Stochastic policy means that it does not output a single action, but a distribution of probabilities over actions, which sum to 1.0. We’ll also use a notation π(a|s) which means the probability of taking action a in state s. For clarity, note that there is no concept of greedy policy in this case. The policy π does not maximize any value. It is simply a function of a state s, returning probabilities for all possible actions.    
+Our neural network with weights θ will now take an state s as an input and output an action probability distribution, π_θ.   
+In practice, we can take an action according to this distribution or simply take the action with the highest probability, both approaches have their pros and cons.
+   
+But we want the policy to get better, so how do we optimize it? First, we need some metric that will tell us how good a policy is. Let’s define a function J(π) as a discounted reward that a policy π can gain, averaged over all possible starting states s_0. What we truly care about is how to improve this quantity. If we knew the gradient of this function, it would be trivial. Surprisingly, it turns out that there’s easily computable gradient of J(π) function in the following form:
+
+<p align="center"><img src="https://s0.wp.com/latex.php?latex=%5Cnabla_%5Ctheta%5C%3BJ%28%5Cpi%29+%3D+E_%7Bs%5Csim%5Crho%5E%5Cpi%2C%5C%3Ba%5Csim%7B%5Cpi%28s%29%7D%7D%5B+A%28s%2C+a%29+%5Ccdot+%5Cnabla_%5Ctheta%5C%3Blog%5C%3B%5Cpi%28a%7Cs%29+%5D+&bg=ffffff&fg=242424&s=0&zoom=2"></p>
+
+**Actor-Critic**: One thing that remains to be explained is how we compute the A(s, a) term.
+
+<p align="center"><img src="https://s0.wp.com/latex.php?latex=A%28s%2C+a%29+%3D+Q%28s%2C+a%29+-+V%28s%29+%3D+r+%2B+%5Cgamma+V%28s%27%29+-+V%28s%29+&bg=ffffff&fg=242424&s=0&zoom=2"></p>
+
+We can see that it is sufficient to know the value function V(s) to compute A(s, a). The value function can also be approximated by a neural network, just as we did with action-value function in DQN. Compared to that, it’s easier to learn, because there is only one value for each state.
+  
+What’s more, we can use the same neural network for estimating π(s) to estimate V(s). This has multiple benefits. Because we optimize both of these goals together, we learn much faster and effectively. 
+
+<p align="center"><img src="https://jaromiru.files.wordpress.com/2017/02/a3c_nn_2.png?w=280&zoom=2"></p>
+   
+So we have two different concepts working together. The goal of the first one is to optimize the policy, so it performs better. This part is called **actor**. The second is trying to estimate the value function, to make it more precise. That is called **critic**.
+
+**Asynchronous**: The samples we gather during a run of an agent are highly correlated. If we use them as they arrive, we quickly run into issues of online learning. In DQN, we used Experience Replay. But there’s another way to break this correlation while still using online learning. We can run several agents in parallel, each with its own copy of the environment, and use their samples as they arrive. Another benefit is that this approach needs much less memory, because we don’t need to store the samples.
+   
+Multiple separate environments are run in parallel, each of which contains an agent. The agents however share one neural network. Samples produced by agents are gathered in a queue, from where they are asynchronously used by a separate optimizer thread to improve the policy. 
+
+**N-step return**: Usually we used something called 1-step return when we computed Q(s, a), V(s) or A(s, a) functions. That means that we looked only one step ahead. However, we can use more steps to give us another approximation:
+
+<p align="center"><img src="https://s0.wp.com/latex.php?latex=V%28s_0%29+%5Cxrightarrow%7B%7D+r_0+%2B+%5Cgamma+r_1+%2B+...+%2B+%5Cgamma%5En+V%28s_n%29&bg=ffffff&fg=242424&s=0&zoom=2"></p>
+
+The n-step return has an advantage that changes in the approximated function get propagated much more quickly. Let’s say that the agent experienced a transition with unexpected reward. In 1-step return scenario, the value function would only change slowly one step backwards with each iteration. In n-step return however, the change is propagated n steps backwards each iteration, thus much quicker.   
+   
+N-step return has its drawbacks. It’s higher variance because the value depends on a chain of actions which can lead into many different states. This might endanger the convergence.   
+   
+Full commented implementation: https://jaromiru.com/2017/03/26/lets-make-an-a3c-implementation/   
+https://github.com/jaromiru/AI-blog/blob/master/CartPole-A3C.py   
+
+**Loss Function**: Now we have to define a loss function, which has three parts:
+
+<p align="center"><img src="https://s0.wp.com/latex.php?latex=L+%3D+L_%7B%5Cpi%7D+%2B+c_v+L_v+%2B+c_%7Breg%7D+L_%7Breg%7D&bg=ffffff&fg=242424&s=0&zoom=2"></p>
+
+L_π is the loss of the policy, L_v is the value error and L_reg is a regularization term. These parts are multiplied by constants c_v and c_reg, which determine what part we stress more.
+
+**Policy Loss**:
+
+<p align="center"><img src="https://s0.wp.com/latex.php?latex=L_%5Cpi+%3D+-+%5Cfrac%7B1%7D%7Bn%7D+%5Csum_%7Bi%3D1%7D%5E%7Bn%7D+%5Cunderline%7BA%28s_i%2C+a_i%29%7D+%5Ccdot+log%5C%3B%5Cpi%28a_i%7Cs_i%29+&bg=ffffff&fg=242424&s=0&zoom=2"></p>
+
+ We need to take care to treat the advantage function as constant, by using tf.stop_gradient() operator.    
+ loss_policy = - logp * tf.stop_gradient(advantage) 
+
+**Value Loss**:
+
+<p align="center"><img src="https://s0.wp.com/latex.php?latex=V%28s_0%29+%3D+r_0+%2B+%5Cgamma+r_1+%2B+%5Cgamma%5E2+r_2+%2B+...+%2B+%5Cgamma%5E%7Bn-1%7D+r_%7Bn-1%7D+%2B+%5Cgamma%5En+V%28s_n%29&bg=ffffff&fg=242424&s=0&zoom=2"></p>
+
+The approximated V(s) should converge according to this formula and we can measure the error as:
+
+<p align="center"><img src="https://s0.wp.com/latex.php?latex=e+%3D+r_0+%2B+%5Cgamma+r_1+%2B+%5Cgamma%5E2+r_2+%2B+...+%2B+%5Cgamma%5E%7Bn-1%7D+r_%7Bn-1%7D+%2B+%5Cgamma%5En+V%28s_n%29+-+V%28s_0%29&bg=ffffff&fg=242424&s=0&zoom=2"></p>
+
+Then we can define the L_v as a mean squared error of all given samples as:
+
+<p align="center"><img src="https://s0.wp.com/latex.php?latex=L_V+%3D+%5Cfrac%7B1%7D%7Bn%7D%5Csum_%7Bi%3D1%7D%5E%7Bn%7D+e_i%5E2+&bg=ffffff&fg=242424&s=0&zoom=2"></p>
+
+**Regularization with policy entropy**: Adding entropy to the loss function was found to improve exploration by limiting the premature convergence to suboptimal policy. Entropy for policy π(s) is defined as:
+
+<p align="center"><img src="https://s0.wp.com/latex.php?latex=H%28%5Cpi%28s%29%29+%3D+-+%5Csum_%7Bk%3D1%7D%5E%7Bn%7D+%5Cpi%28s%29_k+%5Ccdot+log%5C%3B%5Cpi%28s%29_k&bg=ffffff&fg=242424&s=0&zoom=2"></p>
+
+Where π(s)_k is a probability for k-th action in state s. It’s useful to know that entropy for fully deterministic policy (e.g. [1, 0, 0, 0] for four actions) is 0 and it is maximized for totally uniform policy (e.g. [0.25, 0.25, 0.25, 0.25]). Knowing this we see that by trying to maximize the entropy, we are keeping the policy away from the deterministic one. This fact stimulate exploration.   
+Averaging over all samples in a batch, L_{reg} is then set to:  
+<p align="center"><img src="https://s0.wp.com/latex.php?latex=L_%7Breg%7D+%3D+-+%5Cfrac%7B1%7D%7Bn%7D%5Csum_%7Bi%3D1%7D%5E%7Bn%7D+H%28%5Cpi%28s_i%29%29&bg=ffffff&fg=242424&s=0&zoom=2"></p>
+
+In the tutorial, they took c_v = 0.5 and C_reg = 0.01
