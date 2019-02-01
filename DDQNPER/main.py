@@ -1,5 +1,4 @@
 from Environment import Env, play
-import torch
 import matplotlib.pyplot as plt
 from Agent import RandomAgent, DDQNPER_Agent
 import numpy as np
@@ -13,13 +12,12 @@ class HPS():
         self.width = 64
         self.img_channels = 3
         self.max_retries = 3
-        self.nb_episodes = 100
-        self.nb_episodes_random = 100
-        self.batch_size = 32
+        self.nb_episodes_random = 400
+        self.nb_episodes = 1000
+        self.batch_size = 64
         self.total_reward = []
         self.previous_img = []
         self.mission_file = './maze.xml'
-        self.possible_rewards = [-0.01, -1.01, 0.99]
         self.memory_capacity = 100000
         self.gamma = 0.99
         self.learning_rate = 0.001
@@ -39,4 +37,9 @@ play(env, hps, randomAgent, hps.nb_episodes_random)
 
 Agent = DDQNPER_Agent(hps)
 Agent.memory = randomAgent.memory       
-play(env, hps, Agent, 100)
+play(env, hps, Agent, hps.nb_episodes)
+plt.plot(Agent.losses)
+
+import torch
+torch.save(Agent.optimizer.state_dict(),'models/DDQNPER_optimizer.pt')
+torch.save(Agent.model.state_dict(),'models/DDQNPER_weights.pt')
