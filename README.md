@@ -38,6 +38,8 @@ With Prioritized Experience Replay, the network is focusing more on the final po
 <a name="wm"></a>
 # World Model
 
+<p align="center"><img src="https://github.com/avillemin/Minecraft-AI/blob/master/World-Model/figures/world%20model%20network.jpg"></p>
+
 The Minecraft environment is very heavy and the game easily runs out of memory with a long training. My approach to deal with this issue is to create a World Model. By creating a neural network able to dream and play Minecraft without the environment, we can easily improve the learning and parallelize the process. First, let's create a variational autoencoder able to encode our input images into a smaller vector:
 
 <p align="center"><img src="https://worldmodels.github.io/assets/conv_vae_label.svg" width="350" height="600"></p>
