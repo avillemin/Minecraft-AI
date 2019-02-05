@@ -17,6 +17,8 @@ Environment used : https://github.com/Microsoft/malmo
 <a name="Ql"></a>
 # Q-Learning
 
+<p align="center"><img src="https://github.com/avillemin/Minecraft-AI/blob/master/DQN/Qvalues.png" height="350px"></p>
+
 <a name="DQl"></a>
 # Deep Q-Learning
 
