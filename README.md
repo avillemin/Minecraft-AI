@@ -22,6 +22,8 @@ Environment used : https://github.com/Microsoft/malmo
 <a name="DQl"></a>
 # Deep Q-Learning
 
+<p align="center"><img src="https://github.com/avillemin/Minecraft-AI/blob/master/DQN/dq%20network.jpg"></p>
+
 As expected, the result is not very good. Why? Because there is only a positive reward when the Agent reaches the final blue block. The problem is that it happens very few because the agent fell into the lava before. So the sample when the agent reaches the positive reward represents less than 1% of the samples with a random policy. As I'm using samples randomly selected from the memory to train my model, the agent doesn't learn correctly the case when the positive reward occurs. All the Q-values predicted are negative. To deal with this issue, we need to use a memory with Prioritized Experience Replay.
 
 <a name="DDQl"></a>
