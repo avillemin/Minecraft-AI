@@ -15,4 +15,20 @@ The next steps of this project will be to apply a World Model and A3C on the sam
 
 Environment used : https://github.com/Microsoft/malmo
 
+# Deep-Q Learning
+
+As expected, the result is not very good. Why? Because there is only a positive reward when the Agent reaches the final blue block. The problem is that it happens very few because the agent fell into the lava before. So the sample when the agent reaches the positive reward represents less than 1% of the samples with a random policy. As I'm using samples randomly selected from the memory to train my model, the agent doesn't learn correctly the case when the positive reward occurs. All the Q-values predicted are negative. To deal with this issue, we need to use a memory with Prioritized Experience Replay.
+
+# Double Deep-Q Learning with Prioritized Experience Replay
+
+<p align="center"><img src="https://github.com/avillemin/Minecraft-AI/blob/master/DDQNPER/victory.gif" height="256px"></p>
+
+# World Model
+
+The Minecraft environment is very heavy and the game easily runs out of memory with a long training. My approach to deal with this issue is to create a World Model. By creating a neural network able to dream and play Minecraft without the environment, we can easily improve the learning and parallelize the process. First, let's create a variational autoencoder able to encode our input images into a smaller vector:
+
+<p align="center"><img src="https://worldmodels.github.io/assets/conv_vae_label.svg" width="350" height="600"></p>
+
+Here is the result of the VAE with the original image and the reconstructed image:
+
 <p align="center"><img src="https://github.com/avillemin/Minecraft-AI/blob/master/World-Model/figures/VAE.png"></p>
