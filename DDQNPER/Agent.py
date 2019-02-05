@@ -149,14 +149,28 @@ class DDQNPER_Agent():
     
         return loss.mean()
     
+    def save(self,path=None):
+        path = './models/DDQNPER' if path==None else path
+        torch.save(self.optimizer.state_dict(),path+'_optimizer.pt')
+        torch.save(self.model.state_dict(),path+'_weights.pt')
+        print('DDQNPER Model and Optimizer saved')
+        
+    def load(self,path=None):
+        path = './models/DDQNPER' if path==None else path
+        self.model.load_state_dict(torch.load(path+'_weights.pt', map_location=self.device))
+        self.target_model.load_state_dict(torch.load(path+'_weights.pt', map_location=self.device))
+        self.optimizer.load_state_dict(torch.load(path+'_optimizer.pt', map_location=self.device))
+        self.model.eval()
+        print('DDQNPER Model and Optimizer loaded')
+    
 class Brain(nn.Module):
     def __init__(self,height,width,nb_outputs):
         super(Brain,self).__init__()
         self.convolution1 = nn.Conv2d(in_channels = 3, out_channels = 32, kernel_size = 5)
-        self.convolution2 = nn.Conv2d(in_channels = 32, out_channels = 32, kernel_size = 3)
-        self.convolution3 = nn.Conv2d(in_channels = 32, out_channels = 64, kernel_size = 2)
-        self.fc1 = nn.Linear(in_features = self.count_neurons((3, height, width)), out_features = 40)
-        self.fc2 = nn.Linear(in_features = 40, out_features = nb_outputs)
+        self.convolution2 = nn.Conv2d(in_channels = 32, out_channels = 64, kernel_size = 5)
+        self.convolution3 = nn.Conv2d(in_channels = 64, out_channels = 128, kernel_size = 3)
+        self.fc1 = nn.Linear(in_features = self.count_neurons((3, height, width)), out_features = 512)
+        self.fc2 = nn.Linear(in_features = 512, out_features = nb_outputs)
               
     def count_neurons(self, image_dim):
         x = Variable(torch.rand(1, *image_dim))

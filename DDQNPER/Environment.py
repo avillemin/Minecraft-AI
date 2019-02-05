@@ -11,6 +11,8 @@ import numpy as np
 import time
 import torch
 
+import imageio as io
+
 class Env():
     def __init__(self, map_path):
         
@@ -63,7 +65,8 @@ class Env():
             
         return self.agent_host
     
-def play(env, hps, agent, nb_epochs): 
+def play(env, hps, agent, nb_epochs, train = False, save_victory = False): 
+    victory_to_gif = []
     for epoch in range(1,nb_epochs+1):
         nb_action_done = 0
         batch_img = torch.empty([0,3,hps.height,hps.width])
@@ -119,9 +122,17 @@ def play(env, hps, agent, nb_epochs):
                 nb_action_done+=1
         if current_r > 0.5:
             print('Success')
-        if epoch%int(nb_epochs/10)==0:print(f'Epoch: {epoch}') 
-        agent.observe((batch_img[:-1], batch_action[:-1], batch_rewards, batch_img[1:]))
-        agent.replay()        
+            if save_victory:
+                victory_to_gif+=[np.array((np.transpose(np.array(img), (1, 2, 0))+1)*128,dtype=np.uint8) for img in batch_img]
+                
+        if epoch%int(nb_epochs/10)==0:print(f'Epoch: {epoch}')          
+            
+        if train:
+            agent.observe((batch_img[:-1], batch_action[:-1], batch_rewards, batch_img[1:]))
+            agent.replay()
+            
+    if save_victory:
+        io.mimsave('./victory.gif', victory_to_gif, duration = 0.2)
 
 def img_process(world_state, hps):
     video_frame = world_state.video_frames[-1].pixels
