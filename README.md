@@ -29,6 +29,8 @@ As expected, the result is not very good. Why? Because there is only a positive 
 <a name="DDQl"></a>
 # Double Deep Q-Learning with Prioritized Experience Replay
 
+<p align="center"><img src="https://cdn-images-1.medium.com/max/1600/1*Go9DNr7YY-wMGdIQ7HQduQ.png" height="160px"> <img src="https://cdn-images-1.medium.com/max/1600/1*Vd1kcpLoQDnM5vrKnvzxbw.png" height="200px"></p>
+
 <p align="center"><img src="https://github.com/avillemin/Minecraft-AI/blob/master/DDQNPER/victory.gif" height="256px"></p>
 
 <a name="wm"></a>
