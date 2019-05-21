@@ -34,10 +34,10 @@ class Env():
         except RuntimeError as e:
             print('ERROR:',e)
             print(self.agent_host.getUsage())
-            exit(1)
+            sys.exit(1)
         if self.agent_host.receivedArgument("help"):
             print(self.agent_host.getUsage())
-            exit(0)
+            sys.exit(0)
             
     def init(self,max_retries):
         self.my_mission = MalmoPython.MissionSpec(self.mission_xml, True)
@@ -59,7 +59,7 @@ class Env():
             except RuntimeError as e:
                 if retry == max_retries - 1:
                     print("Error starting mission:",e)
-                    exit(1)
+                    sys.exit(1)
                 else:
                     time.sleep(2)
             
